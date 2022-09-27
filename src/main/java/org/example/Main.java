@@ -27,7 +27,6 @@ public class Main {
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-//        String databaseUrl = "jdbc:mysql://localhost/" + DB_NAME;
         String databaseUrl = "jdbc:mariadb://localhost:3306/" + DB_NAME;
 
         Dao<Question, String> questionDao;
@@ -45,15 +44,15 @@ public class Main {
 
         port(3030);
 
-        get("questions", (request, response) -> {
+        get("/questions", (request, response) -> {
             response.type(CONTENT_TYPE);
             response.body(getQuestions(questionDao));
             return response.body();
         });
 
-        post("mark", (request, response) -> {
+        post("/evaluate", (request, response) -> {
             response.type(CONTENT_TYPE);
-            response.body(mark(response.body()));
+            response.body(mark(request.body()));
             return response.body();
         });
     }
@@ -61,12 +60,7 @@ public class Main {
     private static String getQuestions(Dao<Question, String> dao) {
         try {
             List<Question> questions = dao.queryForAll();
-
-            AppResponse response = new AppResponse();
-            response.setStatus(200);
-            response.setData(questions);
-
-            return gson.toJson(response);
+            return response(200, questions).toJson();
         } catch (Exception e) {
             return exception(e);
         }
@@ -75,11 +69,16 @@ public class Main {
     private static String mark(String json) {
         try {
             MarkRequest incoming = gson.fromJson(json, MarkRequest.class);
+            LOGGER.info(gson.toJson(incoming));
 
             int introvertCount = 0, extrovertCount = 0;
-            String[] strings = incoming.getAnswers().split(";");
+            String[] strings = incoming.getAnswers().replace(" ", "").split(";");
             for (int i = 0; i < incoming.getAnswerCount(); i++) {
-                if (Boolean.parseBoolean(strings[i])) {
+                String text = strings[i];
+                if (!text.equalsIgnoreCase("true") && !text.equalsIgnoreCase("false")) {
+                    return badInputError().toJson();
+                }
+                if (Boolean.parseBoolean(text)) {
                     introvertCount++;
                 } else {
                     extrovertCount++;
@@ -95,22 +94,28 @@ public class Main {
                 outcome = "Balanced";
             }
 
-            MarkResponse response = new MarkResponse();
-            response.setStatus(200);
-            response.setData(outcome);
-
-            return gson.toJson(response);
+            return response(200, outcome).toJson();
         } catch (Exception e) {
             return exception(e);
         }
     }
 
+    private static AppResponse badInputError() {
+        String error = "Invalid answer value passed. Answers should only be true or false separated" +
+                " by a semicolon(;)\nanswers:true;false;true;false;false;true";
+        return response(500, error);
+    }
+
     private static String exception(Exception e) {
         LOGGER.error(e.getMessage());
-        ErrorResponse response = new ErrorResponse();
-        response.setStatus(500);
-        response.setError(e.getMessage());
-        return gson.toJson(response);
+        return response(500, e.toString()).toJson();
+    }
+
+    private static AppResponse response(int status, Object data) {
+        AppResponse response = new AppResponse(gson);
+        response.setStatus(status);
+        response.setData(data);
+        return response;
     }
 }
 
@@ -122,6 +127,11 @@ class AppResponse {
     @SerializedName("data")
     @Expose
     private Object data;
+    private transient final Gson gson;
+
+    public AppResponse(Gson gson) {
+        this.gson = gson;
+    }
 
     public void setStatus(int status) {
         this.status = status;
@@ -130,17 +140,12 @@ class AppResponse {
     public void setData(Object data) {
         this.data = data;
     }
-}
 
-class ErrorResponse extends AppResponse {
-    @SerializedName("error")
-    @Expose
-    private String error;
-
-    public void setError(String error) {
-        this.error = error;
+    public String toJson() {
+        return gson.toJson(this);
     }
 }
+
 
 class MarkRequest {
     @SerializedName("answer_count")
@@ -157,9 +162,6 @@ class MarkRequest {
     public String getAnswers() {
         return answers;
     }
-}
-
-class MarkResponse extends AppResponse {
 }
 
 @DatabaseTable(tableName = "question")
