@@ -16,25 +16,26 @@ import java.util.List;
 import static spark.Spark.*;
 
 public class Main {
-    private static final String DB_NAME = "pers_test";
-    private static final String DB_USER = "dev";
-    private static final String DB_PASS = "I@N2131";
-
-    private static final String CONTENT_TYPE = "application/json";
-
     private static final Gson gson = new Gson();
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
+    interface Config {
+        String DB_NAME = "pers_test";
+        String DB_USER = "dev";
+        String DB_PASS = "I@N2131";
+        String CONTENT_TYPE = "application/json";
+    }
+
     public static void main(String[] args) {
-        String databaseUrl = "jdbc:mariadb://localhost:3306/" + DB_NAME;
+        String databaseUrl = "jdbc:mariadb://localhost:3306/" + Config.DB_NAME;
 
         Dao<Question, String> questionDao;
 
         try {
             JdbcConnectionSource connectionSource = new JdbcConnectionSource(databaseUrl);
-            connectionSource.setUsername(DB_USER);
-            connectionSource.setPassword(DB_PASS);
+            connectionSource.setUsername(Config.DB_USER);
+            connectionSource.setPassword(Config.DB_PASS);
 
             questionDao = DaoManager.createDao(connectionSource, Question.class);
         } catch (Exception e) {
@@ -45,13 +46,13 @@ public class Main {
         port(3030);
 
         get("/questions", (request, response) -> {
-            response.type(CONTENT_TYPE);
+            response.type(Config.CONTENT_TYPE);
             response.body(getQuestions(questionDao));
             return response.body();
         });
 
         post("/evaluate", (request, response) -> {
-            response.type(CONTENT_TYPE);
+            response.type(Config.CONTENT_TYPE);
             response.body(mark(request.body()));
             return response.body();
         });
@@ -127,6 +128,7 @@ class AppResponse {
     @SerializedName("data")
     @Expose
     private Object data;
+
     private transient final Gson gson;
 
     public AppResponse(Gson gson) {
