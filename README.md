@@ -1,4 +1,4 @@
-# pers_api
+# simple_personality_test_api
 
 Simple Personality-Test REST API for the [Personality Test App](https://github.com/fourthperson/personality_test_app)
 API built on Java8,
@@ -12,6 +12,10 @@ data pertaining to that response.<br/><br/>
 Status value <code>200</code> means Success, with the requested information in the <code>data</code> key.<br/>
 Status value <code>500</code> means that an error occured, and it will return a string
 description of the error under the <code>data</code> key.
+
+## Demo
+
+I have hosted this API at https://perstestapi.iaklabs.com as the base URL
 
 ## Routes
 
