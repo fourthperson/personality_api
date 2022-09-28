@@ -1,8 +1,8 @@
 # simple_personality_test_api
 
 Simple Personality-Test REST API for the [Personality Test App](https://github.com/fourthperson/personality_test_app)
-API built on Java8,
-[Spark](https://sparkjava.com/) Framework, [ORM Lite](https://ormlite.com/) and [MariaDB](https://mariadb.org/)
+built on Java8, [Spark](https://sparkjava.com/) Framework, [ORM Lite](https://ormlite.com/)
+and [MariaDB](https://mariadb.org/)
 
 ## Introduction
 
@@ -15,7 +15,7 @@ description of the error under the <code>data</code> key.
 
 ## Demo
 
-I have hosted this API at https://perstestapi.iaklabs.com as the base URL
+API is hosted at https://perstestapi.iaklabs.com as the base URL
 
 ## Routes
 
