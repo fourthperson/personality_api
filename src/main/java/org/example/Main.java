@@ -22,8 +22,8 @@ public class Main {
 
     interface Config {
         String DB_NAME = "pers_test";
-        String DB_USER = "dev";
-        String DB_PASS = "I@N2131";
+        String DB_USER = "";
+        String DB_PASS = "";
         String CONTENT_TYPE = "application/json";
     }
 
@@ -45,6 +45,11 @@ public class Main {
 
         port(3030);
 
+        get("/", (request, response) -> {
+            halt(403);
+            return request.body();
+        });
+
         get("/questions", (request, response) -> {
             response.type(Config.CONTENT_TYPE);
             response.body(getQuestions(questionDao));
@@ -56,6 +61,10 @@ public class Main {
             response.body(mark(request.body()));
             return response.body();
         });
+
+        redirect.get("/questions/", "/questions");
+
+        redirect.post("/evaluate/", "/evaluate");
     }
 
     private static String getQuestions(Dao<Question, String> dao) {
