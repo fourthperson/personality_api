@@ -7,6 +7,7 @@ import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcConnectionSource;
+import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,20 +21,12 @@ public class Main {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
-    interface Config {
-        String DB_NAME = "pers_test";
-        String DB_USER = "";
-        String DB_PASS = "";
-        String CONTENT_TYPE = "application/json";
-    }
-
     public static void main(String[] args) {
-        String databaseUrl = "jdbc:mariadb://localhost:3306/" + Config.DB_NAME;
-
         Dao<Question, String> questionDao;
 
         try {
-            JdbcConnectionSource connectionSource = new JdbcConnectionSource(databaseUrl);
+            JdbcPooledConnectionSource connectionSource = new JdbcPooledConnectionSource(Config.databaseUrl);
+//            JdbcConnectionSource connectionSource = new JdbcConnectionSource(Config.databaseUrl);
             connectionSource.setUsername(Config.DB_USER);
             connectionSource.setPassword(Config.DB_PASS);
 
