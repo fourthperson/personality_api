@@ -6,7 +6,6 @@ import com.google.gson.annotations.SerializedName;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
-import com.j256.ormlite.jdbc.JdbcConnectionSource;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
 import org.slf4j.Logger;
@@ -26,7 +25,6 @@ public class Main {
 
         try {
             JdbcPooledConnectionSource connectionSource = new JdbcPooledConnectionSource(Config.databaseUrl);
-//            JdbcConnectionSource connectionSource = new JdbcConnectionSource(Config.databaseUrl);
             connectionSource.setUsername(Config.DB_USER);
             connectionSource.setPassword(Config.DB_PASS);
 
