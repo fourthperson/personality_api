@@ -1,36 +1,42 @@
-package org.example;
+package org.fourthperson;
 
-import com.google.gson.Gson;
-import com.google.gson.annotations.Expose;
-import com.google.gson.annotations.SerializedName;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
 import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
 import com.j256.ormlite.table.DatabaseTable;
+import com.squareup.moshi.Json;
+import com.squareup.moshi.JsonAdapter;
+import com.squareup.moshi.Moshi;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 
 import static spark.Spark.*;
 
 public class Main {
-    private static final Gson gson = new Gson();
+    private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(Main.class);
+    private static JsonAdapter<MarkRequest> markRequestJsonAdapter;
+    private static JsonAdapter<AppResponse> appResponseJsonAdapter;
 
     public static void main(String[] args) {
+        Moshi moshi = new Moshi.Builder().build();
+        markRequestJsonAdapter = moshi.adapter(MarkRequest.class);
+        appResponseJsonAdapter = moshi.adapter(AppResponse.class);
+
         Dao<Question, String> questionDao;
 
         try {
             JdbcPooledConnectionSource connectionSource = new JdbcPooledConnectionSource(Config.databaseUrl);
-            connectionSource.setUsername(Config.DB_USER);
-            connectionSource.setPassword(Config.DB_PASS);
+            connectionSource.setUsername(Config.dbUser);
+            connectionSource.setPassword(Config.dbPass);
 
             questionDao = DaoManager.createDao(connectionSource, Question.class);
         } catch (Exception e) {
-            LOGGER.error(e.getMessage());
+            logger.error(e.getMessage());
             throw new RuntimeException(e);
         }
 
@@ -42,13 +48,13 @@ public class Main {
         });
 
         get("/questions", (request, response) -> {
-            response.type(Config.CONTENT_TYPE);
+            response.type(Config.contentType);
             response.body(getQuestions(questionDao));
             return response.body();
         });
 
         post("/evaluate", (request, response) -> {
-            response.type(Config.CONTENT_TYPE);
+            response.type(Config.contentType);
             response.body(mark(request.body()));
             return response.body();
         });
@@ -61,6 +67,7 @@ public class Main {
     private static String getQuestions(Dao<Question, String> dao) {
         try {
             List<Question> questions = dao.queryForAll();
+            Collections.shuffle(questions);
             return response(200, questions).toJson();
         } catch (Exception e) {
             return exception(e);
@@ -69,10 +76,14 @@ public class Main {
 
     private static String mark(String json) {
         try {
-            MarkRequest incoming = gson.fromJson(json, MarkRequest.class);
-            LOGGER.info(gson.toJson(incoming));
+            MarkRequest incoming = markRequestJsonAdapter.fromJson(json);
+            if (incoming == null) {
+                return badInputError().toJson();
+            }
 
-            int introvertCount = 0, extrovertCount = 0;
+            logger.info(markRequestJsonAdapter.toJson(incoming));
+
+            int introCount = 0, extroCount = 0;
             String[] strings = incoming.getAnswers().replace(" ", "").split(";");
             for (int i = 0; i < incoming.getAnswerCount(); i++) {
                 String text = strings[i];
@@ -80,22 +91,15 @@ public class Main {
                     return badInputError().toJson();
                 }
                 if (Boolean.parseBoolean(text)) {
-                    introvertCount++;
+                    introCount++;
                 } else {
-                    extrovertCount++;
+                    extroCount++;
                 }
             }
 
-            String outcome;
-            if (introvertCount > extrovertCount) {
-                outcome = "Introverted";
-            } else if (extrovertCount > introvertCount) {
-                outcome = "Extroverted";
-            } else {
-                outcome = "Balanced";
-            }
+            String res = introCount > extroCount ? "Introverted" : extroCount > introCount ? "Extroverted" : "Balanced";
 
-            return response(200, outcome).toJson();
+            return response(200, res).toJson();
         } catch (Exception e) {
             return exception(e);
         }
@@ -108,12 +112,12 @@ public class Main {
     }
 
     private static String exception(Exception e) {
-        LOGGER.error(e.getMessage());
+        logger.error(e.getMessage());
         return response(500, e.toString()).toJson();
     }
 
     private static AppResponse response(int status, Object data) {
-        AppResponse response = new AppResponse(gson);
+        AppResponse response = new AppResponse(appResponseJsonAdapter);
         response.setStatus(status);
         response.setData(data);
         return response;
@@ -121,18 +125,15 @@ public class Main {
 }
 
 class AppResponse {
-    @SerializedName("status")
-    @Expose
+    @Json(name = "status")
     private int status;
-
-    @SerializedName("data")
-    @Expose
+    @Json(name = "data")
     private Object data;
 
-    private transient final Gson gson;
+    private transient final JsonAdapter<AppResponse> jsonAdapter;
 
-    public AppResponse(Gson gson) {
-        this.gson = gson;
+    public AppResponse(JsonAdapter<AppResponse> adapter) {
+        this.jsonAdapter = adapter;
     }
 
     public void setStatus(int status) {
@@ -144,17 +145,15 @@ class AppResponse {
     }
 
     public String toJson() {
-        return gson.toJson(this);
+        return jsonAdapter.toJson(this);
     }
 }
 
 
 class MarkRequest {
-    @SerializedName("answer_count")
-    @Expose
+    @Json(name = "answer_count")
     private Integer answerCount;
-    @SerializedName("answers")
-    @Expose
+    @Json(name = "answers")
     private String answers;
 
     public Integer getAnswerCount() {
@@ -177,4 +176,12 @@ class Question {
 
     public Question() {
     }
+}
+
+interface Config {
+    String dbName = "pers_test";
+    String dbUser = "user";
+    String dbPass = "password";
+    String contentType = "application/json";
+    String databaseUrl = "jdbc:mariadb://localhost:3306/" + Config.dbName;
 }

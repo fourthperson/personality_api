@@ -1,7 +1,8 @@
 # simple_personality_test_api
 
 Simple Personality-Test REST API for the [Personality Test App](https://github.com/fourthperson/personality_test_app)
-built on Java8, [Spark](https://sparkjava.com/) Framework, [ORM Lite](https://ormlite.com/)
+built on Java8, [Spark](https://sparkjava.com/) Web
+Framework, [ORM Lite](https://ormlite.com/), [Moshi](https://github.com/square/moshi),
 and [MariaDB](https://mariadb.org/)
 
 ## Introduction
@@ -10,7 +11,7 @@ The API receives and returns only JSON <code>application/json</code>.<br/><br/>
 Each response JSON body has a <code>status</code> key which is an integer and a <code>data</code> key which contains the
 data pertaining to that response.<br/><br/>
 Status value <code>200</code> means Success, with the requested information in the <code>data</code> key.<br/>
-Status value <code>500</code> means that an error occured, and it will return a string
+Status value <code>500</code> means that an error occurred, and it will return a string
 description of the error under the <code>data</code> key.
 
 ## Demo
@@ -27,7 +28,7 @@ Used to fetch a list of simple personality-test questions.
 
 #### Request
 
-Send a standard GET request to the /questions endpoint with no payload or body data.
+Send a standard GET request to the <code>/questions</code> endpoint with no payload or body data.
 
 #### Response
 
