@@ -180,8 +180,8 @@ class Question {
 
 interface Config {
     String dbName = "pers_test";
-    String dbUser = "user";
-    String dbPass = "password";
+    String dbUser = "root";
+    String dbPass = "I@N2131";
     String contentType = "application/json";
     String databaseUrl = "jdbc:mariadb://localhost:3306/" + Config.dbName;
 }
