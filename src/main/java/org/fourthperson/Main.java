@@ -8,13 +8,12 @@ import com.j256.ormlite.table.DatabaseTable;
 import com.squareup.moshi.Json;
 import com.squareup.moshi.JsonAdapter;
 import com.squareup.moshi.Moshi;
+import io.javalin.Javalin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
-
-import static spark.Spark.*;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
@@ -40,28 +39,19 @@ public class Main {
             throw new RuntimeException(e);
         }
 
-        port(3030);
+        Javalin apiApp = Javalin.create();
 
-        get("/", (request, response) -> {
-            halt(403);
-            return request.body();
-        });
+        apiApp.get("/", context -> context.status(403));
 
-        get("/questions", (request, response) -> {
-            response.type(Config.contentType);
-            response.body(getQuestions(questionDao));
-            return response.body();
-        });
+        apiApp.get("/questions", context -> context.json(getQuestions(questionDao)));
 
-        post("/evaluate", (request, response) -> {
-            response.type(Config.contentType);
-            response.body(mark(request.body()));
-            return response.body();
-        });
+        apiApp.post("/evaluate", context -> context.json(mark(context.body())));
 
-        redirect.get("/questions/", "/questions");
+        apiApp.get("/questions/", context -> context.redirect("/questions"));
 
-        redirect.post("/evaluate/", "/evaluate");
+        apiApp.get("/evaluate/", context -> context.redirect("/evaluate"));
+
+        apiApp.start(3030);
     }
 
     private static String getQuestions(Dao<Question, String> dao) {
