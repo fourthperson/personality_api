@@ -1,177 +1,81 @@
 package org.fourthperson;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.j256.ormlite.dao.Dao;
 import com.j256.ormlite.dao.DaoManager;
-import com.j256.ormlite.field.DatabaseField;
 import com.j256.ormlite.jdbc.JdbcPooledConnectionSource;
-import com.j256.ormlite.table.DatabaseTable;
-import com.squareup.moshi.Json;
-import com.squareup.moshi.JsonAdapter;
-import com.squareup.moshi.Moshi;
 import io.javalin.Javalin;
+import org.fourthperson.data.entity.DbQuestion;
+import org.fourthperson.data.repository.EvaluationRepoImpl;
+import org.fourthperson.data.repository.QuestionRepoImpl;
+import org.fourthperson.data.source.DbDataSource;
+import org.fourthperson.data.source.DbDataSourceImpl;
+import org.fourthperson.domain.entity.AppResponse;
+import org.fourthperson.domain.entity.Evaluation;
+import org.fourthperson.domain.entity.EvaluationArgs;
+import org.fourthperson.domain.entity.Question;
+import org.fourthperson.domain.repository.EvaluationRepo;
+import org.fourthperson.domain.repository.QuestionRepo;
+import org.fourthperson.domain.use_case.GetEvaluationUseCase;
+import org.fourthperson.domain.use_case.GetQuestionUseCase;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.List;
 
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    private static JsonAdapter<MarkRequest> markRequestJsonAdapter;
-    private static JsonAdapter<AppResponse> appResponseJsonAdapter;
-
     public static void main(String[] args) {
-        Moshi moshi = new Moshi.Builder().build();
-        markRequestJsonAdapter = moshi.adapter(MarkRequest.class);
-        appResponseJsonAdapter = moshi.adapter(AppResponse.class);
-
-        Dao<Question, String> questionDao;
-
+        // Database DAOs
+        Dao<DbQuestion, String> questionDao;
         try {
             JdbcPooledConnectionSource connectionSource = new JdbcPooledConnectionSource(Config.databaseUrl);
             connectionSource.setUsername(Config.dbUser);
             connectionSource.setPassword(Config.dbPass);
 
-            questionDao = DaoManager.createDao(connectionSource, Question.class);
+            questionDao = DaoManager.createDao(connectionSource, DbQuestion.class);
         } catch (Exception e) {
             logger.error(e.getMessage());
             throw new RuntimeException(e);
         }
 
-        Javalin apiApp = Javalin.create();
+        // Data Sources
+        final DbDataSource dbDataSource = new DbDataSourceImpl(questionDao);
+        // Repositories
+        final QuestionRepo questionRepo = new QuestionRepoImpl(dbDataSource);
+        final EvaluationRepo evaluationRepo = new EvaluationRepoImpl();
+        // Use-Cases
+        final GetQuestionUseCase getQuestionUseCase = new GetQuestionUseCase(questionRepo);
+        final GetEvaluationUseCase getEvaluationUseCase = new GetEvaluationUseCase(evaluationRepo);
 
-        apiApp.get("/", context -> context.status(403));
+        // Server app
+        final Javalin app = Javalin.create();
 
-        apiApp.get("/questions", context -> context.json(getQuestions(questionDao)));
+        // Server routes
+        app.get("/", context -> context.status(403));
 
-        apiApp.post("/evaluate", context -> context.json(mark(context.body())));
+        app.get("/questions", context -> {
+            List<Question> questions = getQuestionUseCase.invoke();
+            boolean successful = questions != null && !questions.isEmpty();
+            AppResponse resp = AppResponse.create(successful ? 200 : 500, successful ? questions : "An error occurred");
+            context.json(resp);
+        });
 
-        apiApp.get("/questions/", context -> context.redirect("/questions"));
+        app.post("/evaluate", context -> {
+            EvaluationArgs eArgs = new ObjectMapper().readValue(context.body(), EvaluationArgs.class);
+            Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
+            boolean successful = evaluation.outcome != null;
+            String data = successful ? evaluation.outcome : Config.evaluationError;
+            AppResponse resp = AppResponse.create(successful ? 200 : 500, data);
+            context.json(resp);
+        });
 
-        apiApp.get("/evaluate/", context -> context.redirect("/evaluate"));
+        app.get("/questions/", context -> context.redirect("/questions"));
 
-        apiApp.start(3030);
+        app.get("/evaluate/", context -> context.redirect("/evaluate"));
+
+        // Start server
+        app.start(Config.serverPort);
     }
-
-    private static String getQuestions(Dao<Question, String> dao) {
-        try {
-            List<Question> questions = dao.queryForAll();
-            Collections.shuffle(questions);
-            return response(200, questions).toJson();
-        } catch (Exception e) {
-            return exception(e);
-        }
-    }
-
-    private static String mark(String json) {
-        try {
-            MarkRequest incoming = markRequestJsonAdapter.fromJson(json);
-            if (incoming == null) {
-                return badInputError().toJson();
-            }
-
-            logger.info(markRequestJsonAdapter.toJson(incoming));
-
-            int introCount = 0, extroCount = 0;
-            String[] strings = incoming.getAnswers().replace(" ", "").split(";");
-            for (int i = 0; i < incoming.getAnswerCount(); i++) {
-                String text = strings[i];
-                if (!text.equalsIgnoreCase("true") && !text.equalsIgnoreCase("false")) {
-                    return badInputError().toJson();
-                }
-                if (Boolean.parseBoolean(text)) {
-                    introCount++;
-                } else {
-                    extroCount++;
-                }
-            }
-
-            String res = introCount > extroCount ? "Introverted" : extroCount > introCount ? "Extroverted" : "Balanced";
-
-            return response(200, res).toJson();
-        } catch (Exception e) {
-            return exception(e);
-        }
-    }
-
-    private static AppResponse badInputError() {
-        String error = "Invalid answer value passed. Answers should only be true or false separated" +
-                " by a semicolon(;)\nanswers:true;false;true;false;false;true";
-        return response(500, error);
-    }
-
-    private static String exception(Exception e) {
-        logger.error(e.getMessage());
-        return response(500, e.toString()).toJson();
-    }
-
-    private static AppResponse response(int status, Object data) {
-        AppResponse response = new AppResponse(appResponseJsonAdapter);
-        response.setStatus(status);
-        response.setData(data);
-        return response;
-    }
-}
-
-class AppResponse {
-    @Json(name = "status")
-    private int status;
-    @Json(name = "data")
-    private Object data;
-
-    private transient final JsonAdapter<AppResponse> jsonAdapter;
-
-    public AppResponse(JsonAdapter<AppResponse> adapter) {
-        this.jsonAdapter = adapter;
-    }
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-    public void setData(Object data) {
-        this.data = data;
-    }
-
-    public String toJson() {
-        return jsonAdapter.toJson(this);
-    }
-}
-
-
-class MarkRequest {
-    @Json(name = "answer_count")
-    private Integer answerCount;
-    @Json(name = "answers")
-    private String answers;
-
-    public Integer getAnswerCount() {
-        return answerCount;
-    }
-
-    public String getAnswers() {
-        return answers;
-    }
-}
-
-@DatabaseTable(tableName = "question")
-class Question {
-    @DatabaseField(columnName = "id", generatedId = true)
-    private int id;
-    @DatabaseField(columnName = "text")
-    private String text;
-    @DatabaseField(columnName = "created_on")
-    private String created_on;
-
-    public Question() {
-    }
-}
-
-interface Config {
-    String dbName = "pers_test";
-    String dbUser = "root";
-    String dbPass = "I@N2131";
-    String contentType = "application/json";
-    String databaseUrl = "jdbc:mariadb://localhost:3306/" + Config.dbName;
 }
