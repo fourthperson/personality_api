@@ -41,7 +41,7 @@ public class Main {
 
         Javalin apiApp = Javalin.create();
 
-        apiApp.get("/", ctx -> ctx.status(403));
+        apiApp.get("/", context -> context.status(403));
 
         apiApp.get("/questions", context -> context.json(getQuestions(questionDao)));
 
