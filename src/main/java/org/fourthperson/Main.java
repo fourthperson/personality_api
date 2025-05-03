@@ -57,7 +57,8 @@ public class Main {
 
         app.get("/questions", context -> {
             List<Question> questions = getQuestionUseCase.invoke();
-            AppResponse resp = AppResponse.create(200, questions);
+            boolean successful = questions != null && !questions.isEmpty();
+            AppResponse resp = AppResponse.create(successful ? 200 : 500, successful ? questions : "An error occurred");
             context.json(resp);
         });
 
