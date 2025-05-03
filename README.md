@@ -14,9 +14,22 @@ Status value <code>200</code> means Success, with the requested information in t
 Status value <code>500</code> means that an error occurred, and it will return a string
 description of the error under the <code>data</code> key.
 
-## Demo
+## Database Setup
 
-API is hosted at https://perstestapi.iaklabs.ink as the base URL
+This application uses MariaDB
+There is a [dockerfile](docker-compose.yml) included and an exported SQL
+File [pers_test_2022-09-27.sql](pers_test_2022-09-27.sql).
+
+1. Install docker
+2. Run `docker compose up`, to spin up a MariaDb and PhpMyAdmin container.
+3. Access PhpMyAdmin by visiting [localhost:8080](http://127.0.0.1:8080) on your browser
+4. Use the `pers_test` database
+5. Import the `pers_test_2022-09-27.sql` file or copy its contents to import the questions.
+
+## Run the app
+
+Run the Main.java file, and you can access the routes/endpoints in REST clients
+at [http://localhost:3030](http://localhost:3030)
 
 ## Routes
 
