@@ -1,7 +1,7 @@
 # Simple Personality Test API
 
 Simple Personality-Test REST API for the [Personality Test App](https://github.com/fourthperson/personality_test_app)
-built on Java8, [Spark](https://sparkjava.com/) Web
+built on Java8, [Javalin](https://javalin.io/) Web
 Framework, [ORM Lite](https://ormlite.com/), [Moshi](https://github.com/square/moshi),
 and [MariaDB](https://mariadb.org/)
 
