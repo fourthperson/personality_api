@@ -1,2 +1,9 @@
 # Project exclude paths
 /target/
+# docker container data
+data/
+# IDE stuff
+.idea
+.vscode
+# MacOS Finder Preferences File
+**/.DS_Store
