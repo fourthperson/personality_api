@@ -56,19 +56,30 @@ public class Main {
         app.get("/", context -> context.status(403));
 
         app.get("/questions", context -> {
-            List<Question> questions = getQuestionUseCase.invoke();
-            boolean successful = questions != null && !questions.isEmpty();
-            AppResponse resp = AppResponse.create(successful ? 200 : 500, successful ? questions : "An error occurred");
-            context.json(resp);
+            try {
+                List<Question> questions = getQuestionUseCase.invoke();
+                boolean successful = questions != null && !questions.isEmpty();
+                AppResponse resp =
+                        AppResponse.create(successful ? 200 : 500, successful ? questions : Config.internalServerError);
+                context.json(resp).status(200);
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+                context.json(AppResponse.error(e.getMessage())).status(500);
+            }
         });
 
         app.post("/evaluate", context -> {
-            EvaluationArgs eArgs = new ObjectMapper().readValue(context.body(), EvaluationArgs.class);
-            Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
-            boolean successful = evaluation.outcome != null;
-            String data = successful ? evaluation.outcome : Config.evaluationError;
-            AppResponse resp = AppResponse.create(successful ? 200 : 500, data);
-            context.json(resp);
+            try {
+                EvaluationArgs eArgs = new ObjectMapper().readValue(context.body(), EvaluationArgs.class);
+                Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
+                boolean successful = evaluation != null && evaluation.outcome() != null;
+                AppResponse resp = successful ?
+                        AppResponse.success(evaluation.outcome()) : AppResponse.error(Config.evaluationError);
+                context.json(resp).status(200);
+            } catch (Exception e) {
+                logger.error(e.getMessage());
+                context.json(AppResponse.error(e.getMessage())).status(500);
+            }
         });
 
         app.get("/questions/", context -> context.redirect("/questions"));
