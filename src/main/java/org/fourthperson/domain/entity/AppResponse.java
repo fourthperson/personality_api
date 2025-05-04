@@ -1,15 +1,16 @@
 package org.fourthperson.domain.entity;
 
-public class AppResponse {
-    public final int status;
-    public final Object data;
-
-    public AppResponse(int status, Object data) {
-        this.status = status;
-        this.data = data;
-    }
+public record AppResponse(int status, Object data) {
 
     public static AppResponse create(int status, Object data) {
         return new AppResponse(status, data);
+    }
+
+    public static AppResponse success(Object data) {
+        return new AppResponse(200, data);
+    }
+
+    public static AppResponse error(Object data) {
+        return new AppResponse(500, data);
     }
 }
