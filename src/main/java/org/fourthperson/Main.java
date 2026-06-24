@@ -50,43 +50,42 @@ public class Main {
         final GetEvaluationUseCase getEvaluationUseCase = new GetEvaluationUseCase(evaluationRepo);
 
         // Server app
-        final Javalin app = Javalin.create();
+        final Javalin app = Javalin.create(config -> {
+            config.jetty.port = Config.serverPort;
 
-        // Server routes
-        app.get("/", context -> context.status(403));
+            config.router.ignoreTrailingSlashes = true;
 
-        app.get("/questions", context -> {
-            try {
-                List<Question> questions = getQuestionUseCase.invoke();
-                boolean successful = questions != null && !questions.isEmpty();
-                AppResponse resp =
-                        AppResponse.create(successful ? 200 : 500, successful ? questions : Config.internalServerError);
-                context.json(resp).status(200);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-                context.json(AppResponse.error(e.getMessage())).status(500);
-            }
+            config.routes.get("/", context -> context.status(403));
+
+            config.routes.get("/questions", context -> {
+                try {
+                    List<Question> questions = getQuestionUseCase.invoke();
+                    boolean successful = questions != null && !questions.isEmpty();
+                    AppResponse resp =
+                            AppResponse.create(successful ? 200 : 500, successful ? questions : Config.internalServerError);
+                    context.json(resp).status(200);
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                    context.json(AppResponse.error(e.getMessage())).status(500);
+                }
+            });
+
+            config.routes.post("/evaluate", context -> {
+                try {
+                    EvaluationArgs eArgs = new ObjectMapper().readValue(context.body(), EvaluationArgs.class);
+                    Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
+                    boolean successful = evaluation != null && evaluation.outcome() != null;
+                    AppResponse resp = successful ?
+                            AppResponse.success(evaluation.outcome()) : AppResponse.error(Config.evaluationError);
+                    context.json(resp).status(200);
+                } catch (Exception e) {
+                    logger.error(e.getMessage());
+                    context.json(AppResponse.error(e.getMessage())).status(500);
+                }
+            });
         });
-
-        app.post("/evaluate", context -> {
-            try {
-                EvaluationArgs eArgs = new ObjectMapper().readValue(context.body(), EvaluationArgs.class);
-                Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
-                boolean successful = evaluation != null && evaluation.outcome() != null;
-                AppResponse resp = successful ?
-                        AppResponse.success(evaluation.outcome()) : AppResponse.error(Config.evaluationError);
-                context.json(resp).status(200);
-            } catch (Exception e) {
-                logger.error(e.getMessage());
-                context.json(AppResponse.error(e.getMessage())).status(500);
-            }
-        });
-
-        app.get("/questions/", context -> context.redirect("/questions"));
-
-        app.get("/evaluate/", context -> context.redirect("/evaluate"));
 
         // Start server
-        app.start(Config.serverPort);
+        app.start();
     }
 }
