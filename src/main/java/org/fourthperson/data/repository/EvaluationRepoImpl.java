@@ -1,5 +1,6 @@
 package org.fourthperson.data.repository;
 
+import com.google.inject.Inject;
 import org.fourthperson.domain.entity.Evaluation;
 import org.fourthperson.domain.entity.EvaluationArgs;
 import org.fourthperson.domain.repository.EvaluationRepo;
@@ -9,6 +10,10 @@ import java.util.logging.Logger;
 
 public class EvaluationRepoImpl extends EvaluationRepo {
     final Logger logger = Logger.getLogger(EvaluationRepoImpl.class.getCanonicalName());
+
+    @Inject
+    public EvaluationRepoImpl() {
+    }
 
     @Override
     public Evaluation getEvaluation(EvaluationArgs args) {

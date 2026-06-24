@@ -1,5 +1,6 @@
 package org.fourthperson.data.repository;
 
+import com.google.inject.Inject;
 import org.fourthperson.data.entity.DbQuestion;
 import org.fourthperson.data.source.DbDataSource;
 import org.fourthperson.domain.entity.Question;
@@ -11,6 +12,7 @@ import java.util.List;
 public class QuestionRepoImpl extends QuestionRepo {
     final DbDataSource dbDataSource;
 
+    @Inject
     public QuestionRepoImpl(DbDataSource dbDataSource) {
         this.dbDataSource = dbDataSource;
     }
