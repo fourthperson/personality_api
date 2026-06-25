@@ -76,11 +76,21 @@ public class AppModule extends AbstractModule {
     Javalin provideJavalin(
             GetQuestionUseCase getQuestionUseCase,
             GetEvaluationUseCase getEvaluationUseCase,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            JdbcPooledConnectionSource connectionSource
     ) {
         return Javalin.create(config -> {
             config.jetty.port = Config.serverPort;
             config.router.ignoreTrailingSlashes = true;
+
+            config.events.serverStopped(() -> {
+                try {
+                    connectionSource.close();
+                    logger.info("Database connection source closed successfully.");
+                } catch (Exception e) {
+                    logger.error("Error closing database connection source", e);
+                }
+            });
 
             config.routes.get("/", context -> context.status(403));
 
