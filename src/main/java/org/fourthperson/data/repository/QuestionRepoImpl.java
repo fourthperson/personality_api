@@ -7,6 +7,7 @@ import org.fourthperson.domain.entity.Question;
 import org.fourthperson.domain.repository.QuestionRepo;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class QuestionRepoImpl extends QuestionRepo {
@@ -19,15 +20,17 @@ public class QuestionRepoImpl extends QuestionRepo {
 
     @Override
     public List<Question> getQuestions() {
-        List<DbQuestion> dbQuestions = dbDataSource.getDbQuestions();
-        if (dbQuestions != null && !dbQuestions.isEmpty()) {
-            ArrayList<Question> questions = new ArrayList<>();
-            for (DbQuestion dbQuestion : dbQuestions) {
-                Question question = new Question(dbQuestion.getId(), dbQuestion.getText());
-                questions.add(question);
-            }
-            return questions;
+        final List<DbQuestion> dbQuestions = dbDataSource.getDbQuestions();
+
+        if (dbQuestions.isEmpty()) {
+            return Collections.emptyList();
         }
-        return null;
+
+        final ArrayList<Question> questions = new ArrayList<>();
+        for (DbQuestion dbQuestion : dbQuestions) {
+            Question question = new Question(dbQuestion.getId(), dbQuestion.getText());
+            questions.add(question);
+        }
+        return questions;
     }
 }

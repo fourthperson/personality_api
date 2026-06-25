@@ -18,23 +18,21 @@ public class EvaluationRepoImpl extends EvaluationRepo {
     public Evaluation getEvaluation(EvaluationArgs args) {
         try {
             int iCount = 0, eCount = 0;
-            String[] strings = args.answers().replace(" ", "").split(";");
+            final String[] strings = args.answers().replace(" ", "").split(";");
+
             for (int i = 0; i < args.answer_count(); i++) {
-                String text = strings[i];
-                if (!text.equalsIgnoreCase("true") && !text.equalsIgnoreCase("false")) {
-                    return null;
-                }
+                final String text = strings[i];
                 if (Boolean.parseBoolean(text)) {
                     iCount++;
                 } else {
                     eCount++;
                 }
             }
-            String e = iCount > eCount ? "Introverted" : eCount > iCount ? "Extroverted" : "Balanced";
+            final String e = iCount > eCount ? "Introverted" : eCount > iCount ? "Extroverted" : "Balanced";
             return new Evaluation(e);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error during evaluation processing", e);
+            throw new RuntimeException("An unexpected error occurred during evaluation", e);
         }
-        return null;
     }
 }

@@ -3,6 +3,7 @@ package org.fourthperson.data.source;
 import com.google.inject.Inject;
 import com.j256.ormlite.dao.Dao;
 import org.fourthperson.data.entity.DbQuestion;
+import org.fourthperson.domain.exception.DataAccessException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,8 +26,8 @@ public class DbDataSourceImpl extends DbDataSource {
             Collections.shuffle(questions);
             return questions;
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error retrieving questions from database", e);
+            throw new DataAccessException("Failed to retrieve questions", e); // Throw DataAccessException
         }
-        return null;
     }
 }
