@@ -3,15 +3,15 @@ package org.fourthperson.data.source;
 import com.google.inject.Inject;
 import com.j256.ormlite.dao.Dao;
 import org.fourthperson.data.entity.DbQuestion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 public class DbDataSourceImpl extends DbDataSource {
     final Dao<DbQuestion, String> questionDao;
-    final Logger logger = Logger.getLogger(DbDataSourceImpl.class.getCanonicalName());
+    final Logger logger = LoggerFactory.getLogger(DbDataSourceImpl.class);
 
     @Inject
     public DbDataSourceImpl(Dao<DbQuestion, String> questionDao) {
@@ -21,11 +21,11 @@ public class DbDataSourceImpl extends DbDataSource {
     @Override
     public List<DbQuestion> getDbQuestions() {
         try {
-            List<DbQuestion> questions = questionDao.queryForAll();
+            final List<DbQuestion> questions = questionDao.queryForAll();
             Collections.shuffle(questions);
             return questions;
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.getMessage());
+            logger.error(e.getMessage(), e);
         }
         return null;
     }

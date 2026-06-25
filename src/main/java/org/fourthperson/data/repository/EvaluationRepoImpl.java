@@ -4,12 +4,11 @@ import com.google.inject.Inject;
 import org.fourthperson.domain.entity.Evaluation;
 import org.fourthperson.domain.entity.EvaluationArgs;
 import org.fourthperson.domain.repository.EvaluationRepo;
-
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EvaluationRepoImpl extends EvaluationRepo {
-    final Logger logger = Logger.getLogger(EvaluationRepoImpl.class.getCanonicalName());
+    final Logger logger = LoggerFactory.getLogger(EvaluationRepoImpl.class);
 
     @Inject
     public EvaluationRepoImpl() {
@@ -34,7 +33,7 @@ public class EvaluationRepoImpl extends EvaluationRepo {
             String e = iCount > eCount ? "Introverted" : eCount > iCount ? "Extroverted" : "Balanced";
             return new Evaluation(e);
         } catch (Exception e) {
-            logger.log(Level.SEVERE, e.getMessage());
+            logger.error(e.getMessage(), e);
         }
         return null;
     }
