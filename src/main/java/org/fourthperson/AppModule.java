@@ -14,21 +14,19 @@ import org.fourthperson.data.repository.QuestionRepoImpl;
 import org.fourthperson.data.source.DbDataSource;
 import org.fourthperson.data.source.DbDataSourceImpl;
 import org.fourthperson.domain.entity.AppResponse;
-import org.fourthperson.domain.entity.Evaluation;
-import org.fourthperson.domain.entity.EvaluationArgs;
-import org.fourthperson.domain.entity.Question;
 import org.fourthperson.domain.exception.DataAccessException;
 import org.fourthperson.domain.exception.InvalidInputException;
 import org.fourthperson.domain.repository.EvaluationRepo;
 import org.fourthperson.domain.repository.QuestionRepo;
 import org.fourthperson.domain.use_case.GetEvaluationUseCase;
 import org.fourthperson.domain.use_case.GetQuestionUseCase;
+import org.fourthperson.presentation.controller.EvaluationController;
+import org.fourthperson.presentation.controller.QuestionController;
 import org.fourthperson.domain.validation.EvaluationArgsValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.List;
 
 public class AppModule extends AbstractModule {
 
@@ -50,6 +48,10 @@ public class AppModule extends AbstractModule {
 
         // Bind the validator
         bind(EvaluationArgsValidator.class).in(Singleton.class);
+
+        // Bind the controllers
+        bind(QuestionController.class).in(Singleton.class);
+        bind(EvaluationController.class).in(Singleton.class);
     }
 
     @Provides
@@ -80,11 +82,9 @@ public class AppModule extends AbstractModule {
     @Provides
     @Singleton
     Javalin provideJavalin(
-            GetQuestionUseCase getQuestionUseCase,
-            GetEvaluationUseCase getEvaluationUseCase,
-            ObjectMapper objectMapper,
-            JdbcPooledConnectionSource connectionSource,
-            EvaluationArgsValidator evaluationArgsValidator
+            QuestionController questionController,
+            EvaluationController evaluationController,
+            JdbcPooledConnectionSource connectionSource
     ) {
         return Javalin.create(config -> {
             config.jetty.port = Config.serverPort;
@@ -93,17 +93,17 @@ public class AppModule extends AbstractModule {
             // Centralized Exception Handling
             config.routes.exception(InvalidInputException.class, (e, ctx) -> {
                 logger.warn("Invalid input received: {}", e.getMessage());
-                ctx.json(AppResponse.error(e.getMessage())).status(400);
+                ctx.json(AppResponse.error(e.getMessage())).status(400); // 400 Bad Request
             });
 
             config.routes.exception(DataAccessException.class, (e, ctx) -> {
                 logger.error("Data access error: {}", e.getMessage(), e);
-                ctx.json(AppResponse.error(Config.internalServerError)).status(500);
+                ctx.json(AppResponse.error(Config.internalServerError)).status(500); // 500 Internal Server Error
             });
 
             config.routes.exception(Exception.class, (e, ctx) -> {
                 logger.error("Unhandled exception in route: {}", ctx.path(), e);
-                ctx.json(AppResponse.error("An unexpected error occurred: " + e.getMessage())).status(500);
+                ctx.json(AppResponse.error("An unexpected error occurred: " + e.getMessage())).status(500); // Generic 500
             });
 
             // Graceful Database Connection Shutdown
@@ -116,26 +116,12 @@ public class AppModule extends AbstractModule {
                 }
             });
 
+            // Register routes from controllers
+            questionController.registerRoutes(config);
+            evaluationController.registerRoutes(config);
+
+            // Base route
             config.routes.get("/", context -> context.status(403));
-
-            config.routes.get("/questions", context -> {
-                List<Question> questions = getQuestionUseCase.invoke();
-                context.json(AppResponse.success(questions)).status(200);
-            });
-
-            config.routes.post("/evaluate", context -> {
-                final EvaluationArgs eArgs = objectMapper.readValue(context.body(), EvaluationArgs.class);
-
-                evaluationArgsValidator.validate(eArgs);
-
-                final Evaluation evaluation = getEvaluationUseCase.invoke(eArgs);
-
-                if (evaluation == null || evaluation.outcome() == null) {
-                    throw new DataAccessException(Config.evaluationError);
-                }
-
-                context.json(AppResponse.success(evaluation.outcome())).status(200);
-            });
         });
     }
 }
