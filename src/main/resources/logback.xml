@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Set the default logging level for the entire application -->
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+
+    <!-- You can set specific logging levels for packages or classes -->
+    <logger name="org.fourthperson" level="debug" />
+    <logger name="com.j256.ormlite" level="info" />
+    <logger name="io.javalin" level="info" />
+
+</configuration>
