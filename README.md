@@ -2,7 +2,7 @@
 
 Simple Personality-Test REST API for the [Personality Test App](https://github.com/fourthperson/personality_test_app)
 built on Java17, [Javalin](https://javalin.io/) Web
-Framework, [ORM Lite](https://ormlite.com/), [Jackson](https://github.com/FasterXML/jackson),
+Framework, [ORM Lite](https://ormlite.com/), [Jackson](https://github.com/FasterXML/jackson), [Guice DI](https://github.com/google/guice)
 and [MariaDB](https://mariadb.org/)
 
 ## Introduction
